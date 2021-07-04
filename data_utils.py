@@ -29,6 +29,6 @@ def read_qdp(qdp_file_name):
             # print(line)
         data.append(block)
         data.pop(0)
-        return [modes,data]
+        data_dict = {modes_i:np.array(data_i,dtype=np.float32) for modes_i,data_i in zip(modes,data)} 
+        return data_dict
 
-modes,data=read_qdp("XRT unabsorbed flux light curves_10keV.qdp")
