@@ -32,3 +32,18 @@ def read_qdp(qdp_file_name):
         data_dict = {modes_i:np.array(data_i,dtype=np.float32) for modes_i,data_i in zip(modes,data)} 
         return data_dict
 
+def data_to_dict(data):
+    return {'data':data[:,0], 'p_err':data[:,1], 'n_err':data[:,2]}
+
+def split_block(block,labels = ['time', 'value']):
+    """ Takes in a block numpy of the form [[label1_data,label1_+ve_err,label1_-ver_err]
+                                            [label2,label2_+ver_err,label2_-ver_err]]
+    and split into a dictionary of type data['label']['data'\'p_err'\ 'n_err']
+    """
+    data_dict = {}
+    for idx,labels_i in enumerate(labels):
+        temp = block[:, 3*idx : 3*(idx+1)]
+        data_dict[labels_i] = data_to_dict(temp)
+    return data_dict
+
+    
