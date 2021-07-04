@@ -31,3 +31,6 @@ def calc_spectral_index(model_specific_flux, t_list, E_s = 0.3, E_h = 10., args=
     spectral_index= np.log(F_s/F_h)/np.log(E_h/E_s)
     return spectral_index
 
+
+def PL_model(E,t,alpha,beta,norm):
+    return norm*np.power(E,-beta)*np.power(t,-alpha)
