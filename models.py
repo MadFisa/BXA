@@ -9,7 +9,7 @@ import numpy as np
 from scipy import integrate,LowLevelCallable
 from numba import cfunc, types
 
-c=299792458.# velocity of light in m/s
+c=299792458.  # velocity of light in m/s
 h=6.626e-34
 
 
@@ -17,8 +17,8 @@ kev=1.6022e-16
 pc=3.086e+16
 um=1e-6
 
-norm=1/9
 conversion_factor=413560.0 # Converting from erg cm^{-2}/keV to Jy
+scale_factor=1e22
 
 def calc_spectral_index(model_specific_flux, t_list, E_s = 0.3, E_h = 10., args=[]):
     """
@@ -34,3 +34,45 @@ def calc_spectral_index(model_specific_flux, t_list, E_s = 0.3, E_h = 10., args=
 
 def PL_model(E,t,alpha,beta,norm):
     return norm*np.power(E,-beta)*np.power(t,-alpha)
+
+c_sig = types.double(types.intc, types.CPointer(types.double))
+
+@cfunc(c_sig)
+def integrand(n,args):
+    """
+    Integrand written for fast running in numba.Arguments are n = number of 
+    args and args = [a, E, t, R, s, q, z, S(E)] where S(E) = fluence of source at
+    Energy E. Equations are taken from Shao et. al 2008.
+    DOI: 10.1086/527047
+    Written to turn it into low level C callable.
+    """
+    theta=np.sqrt(2*299792458*args[2]/((1+args[6])*args[3]*3.086e+16))    
+    
+    x=(2*np.pi/(6.626e-34*299792458))*(1+args[6])*theta*args[1]*1.6022e-16*args[0]*1e-6
+    
+    tau_a=np.power(args[1]*(1+args[6]),-args[4])*np.power(args[0]/0.1,4.-args[5])
+    temp=(np.sin(x)/x**2) - (np.cos(x)/x)
+    tau_theta=np.power(temp,2)
+    tau=tau_a*tau_theta
+    
+    S = args[7]
+    dF=S*tau/args[2]
+    return dF
+
+ctype_f = LowLevelCallable(integrand.ctypes)
+
+def calc_dust_specific_flux(E, t_list, a_m, a_M, R_pc, s, q, tau0, z, source_fluence_E,  tol = 1.49e-8, lim = 100):
+    """
+    Calculates specific flux as per dust model with given parameters where 
+    E(keV), t(s), a_m and a_M are lower and upper cut offs of grain sizes in 
+    um, R_pc is the distance to dust layer in pc, s and q are as defined in 
+    Shao et. al 2008, z = redshift, source_fluence_E = source fluence at energy
+    E in ergs/keV. Returns the answer in ergs/keV and error.
+    """
+    
+    F_dust = 0.1*tau0*np.array([integrate.quad(ctype_f,
+                                                        a_m, a_M,
+                                                        args=(E, t_i, R_pc, s, q, z, source_fluence_E)
+                                                        ,epsabs=tol,limit=lim) 
+                                             for t_i in t_list])
+    return F_dust
