@@ -21,7 +21,19 @@ def add_xflt(spec_list):
     Function to add time information in a way accessible to PyXspec. It can only access 
     xflt field. This funtion will take information from spectrum files and adds a the info
     to xlft fields. The input is a list of spectrum files.
+
+    Parameters
+    ----------
+    spec_list : List
+        List of spectrum files i.e their paths
+
+    Returns
+    -------
+    None.
+
     """
+
+    
     for spec in spec_list:
         with fits.open(spec, mode='update') as spec_fits:
             print(f'Reading {spec}')
@@ -42,11 +54,28 @@ c_sig = types.double(types.intc, types.CPointer(types.double))
 def pyXspec_integrand_PL(n,args):
     """
     Integrand for pyXspec.Arguments are
-    n = number of args and args = [a, E, t, R, s, q, z, S0, beta] where 
-    S(E) = fluence of source at Energy E. Equations are taken from 
+     Equations and symbols are taken from 
     Shao et. al 2008 (DOI: 10.1086/527047).
     Written to turn it into low level C callable.
+    
+
+    Parameters
+    ----------
+    n : integer
+        Number of arguments i.e len(args)
+    args : array of parameters
+        args = [a, E, t, R, s, q, z, S0, beta] where 
+        S0 = Normalisation of power law source function
+        beta = spectral index of power law source function
+    
+
+    Returns
+    -------
+    dF : float
+        Integrand to be integrated using low level callble in scipy integrate.
+
     """
+
     
     theta=np.sqrt(2*299792458*args[2]/((1+args[6])*args[3]*3.086e+16))    
     
@@ -64,8 +93,9 @@ def pyXspec_integrand_PL(n,args):
 ctype_pyXspec_f_PL = LowLevelCallable(pyXspec_integrand_PL.ctypes)
 
 def dust_PL (engs,params,flux,flux_err,spec_num):
+    
     """
-    XSPEC dust model with power law source function  given parameters 
+        XSPEC dust model with power law source function  given parameters 
     params = [a_m, a_M, R_pc, s, q, tau0, z, S0, 
                          beta, tol = 1.49e-8, lim = 100]
     where E_m and E_M are lower and upper cut offs of 
@@ -76,6 +106,24 @@ def dust_PL (engs,params,flux,flux_err,spec_num):
     the time interval of spectrum which should be
     written as xflt field in FITS file.
     Returns the answer in ergs/keV and error.
+
+    Parameters
+    ----------
+    engs : array
+        Value of energies passed from XSPEC which represents edges of bins.
+    params : list
+        Parameters of the model. Passed from XSPEC
+    flux : array
+        array of fluxes to be filled with flux values, flux[i] = flux between engs[i] and engs[i+1]
+    flux_err : array
+        Similar to flux, but to be filled with flux_err
+    spec_num : integer
+        index of the spectrum that is being fitted to currently
+
+    Returns
+    -------
+    None.
+    
     """
     a_m, a_M, R_pc, s, q, tau0, z, S0, beta , nm= params
     n = len(engs)
@@ -88,6 +136,15 @@ def dust_PL (engs,params,flux,flux_err,spec_num):
                                         args = (R_pc, s, q, z, S0, beta))[0]
 
 def add_dustPL_to_Xspec():
+    """
+    Convenience function to add dust model to xspec with some default model info to be 
+    passed to XSPEC
+
+    Returns
+    -------
+    None.
+
+    """
     #               par_name  units default hard_min soft_min soft_max hard_max fit_delta
     Dust_ModelInfo=("LowerDust \"\" 0.025 0.0001 0.001 0.3 1 0.01",
                 "UpperDust \"\" 0.25 0.0001 0.01 0.8 2 0.01",
