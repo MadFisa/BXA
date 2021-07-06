@@ -63,7 +63,7 @@ def pyXspec_integrand_PL(n,args):
 
 ctype_pyXspec_f_PL = LowLevelCallable(pyXspec_integrand_PL.ctypes)
 
-def dustXspecPL (engs,params,flux,flux_err,spec_num):
+def dust_PL (engs,params,flux,flux_err,spec_num):
     """
     XSPEC dust model with power law source function  given parameters 
     params = [a_m, a_M, R_pc, s, q, tau0, z, S0, 
@@ -86,4 +86,17 @@ def dustXspecPL (engs,params,flux,flux_err,spec_num):
         flux[i] = 0.1*tau0*integrate.nquad(ctype_pyXspec_f_PL, 
                                         ((a_m,a_M), (engs[i],engs[i+1]),(t_l,t_u)),
                                         args = (R_pc, s, q, z, S0, beta))[0]
-    
+
+def add_dustPL_to_Xspec():
+    #               par_name  units default hard_min soft_min soft_max hard_max fit_delta
+    Dust_ModelInfo=("LowerDust \"\" 0.025 0.0001 0.001 0.3 1 0.01",
+                "UpperDust \"\" 0.25 0.0001 0.01 0.8 2 0.01",
+                "DustDistance \"\" 10 0.5 1 500 5000 0.1",
+                "s \"\" 2 -5 0 6 10 0.1",
+                "q \"\" 4.5 0 2.5 6 8 0.1",
+                "tau0 \"\" 1 1e-5 1e-3 1e3 1e5 1e1",
+                "z \"\" 0 0 0 10 100 0.1",
+                "S0 \"\" 1e-6 1e-15 1e-8 1e1 1e3 1e1",
+                "beta \"\" 2 0 0.5 5 10 0.1")
+
+    xp.AllModels.addPyMod(dust_PL, Dust_ModelInfo, 'add')
