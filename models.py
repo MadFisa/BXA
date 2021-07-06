@@ -103,7 +103,7 @@ def total_flux_integrand_PL(n,args):
 
 ctype_total_f_PL = LowLevelCallable(total_flux_integrand_PL.ctypes)
 
-def calc_dust_total_flux_PL(t_list, E_m, E_M, a_m, a_M, R_pc, s, q, tau0, z, s0, 
+def calc_dust_total_flux_PL(t_list, E_m, E_M, a_m, a_M, R_pc, s, q, tau0, z, S0, 
                          beta, tol = 1.49e-8, lim = 100):
     """
     Calculates total flux as per dust model with power law source function.
@@ -116,8 +116,8 @@ def calc_dust_total_flux_PL(t_list, E_m, E_M, a_m, a_M, R_pc, s, q, tau0, z, s0,
     # Need to check the dimensions of output
     F_dust = 0.1*tau0*np.array([integrate.nquad(ctype_total_f_PL,
                                                         ((a_m, a_M), (E_m, E_M)),
-                                                        args=(t_i, R_pc, s, q, z, s0, beta)
+                                                        args=(t_i, R_pc, s, q, z, S0, beta)
                                                         ,opts={"epsabs":tol,"limit":lim})
                                 for t_i in t_list])
     return F_dust
-
+    
