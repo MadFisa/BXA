@@ -156,4 +156,4 @@ def add_dustPL_to_Xspec():
                 "S0 \"\" 1e-6 1e-15 1e-8 1e1 1e3 1e1",
                 "beta \"\" 2 0 0.5 5 10 0.1")
 
-    xp.AllModels.addPyMod(dust_PL, Dust_ModelInfo, 'add')
+    xp.AllModels.addPyMod(dust_PL, Dust_ModelInfo, 'add', spectrumDependent=True)
