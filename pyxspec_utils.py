@@ -7,11 +7,11 @@ Created on Tue Jul  6 20:55:18 2021
 """
 
 import xspec as xp
-# import numpy as np
-# from scipy import integrate,LowLevelCallable
-from models import *
+import numpy as np
 from tqdm import tqdm
 from astropy.io import fits
+from scipy import integrate,LowLevelCallable
+from numba import cfunc, types
 
 tol = 1.49e-8
 lim = 100
@@ -35,3 +35,55 @@ def add_xflt(spec_list):
             print(f'Updated {spec} with t_start = {spec_t_start} \
                                         t_stop = {spec_t_stop}')
             spec_fits.flush()
+
+c_sig = types.double(types.intc, types.CPointer(types.double))
+
+@cfunc(c_sig)
+def pyXspec_integrand_PL(n,args):
+    """
+    Integrand for pyXspec.Arguments are
+    n = number of args and args = [a, E, t, R, s, q, z, S0, beta] where 
+    S(E) = fluence of source at Energy E. Equations are taken from 
+    Shao et. al 2008 (DOI: 10.1086/527047).
+    Written to turn it into low level C callable.
+    """
+    
+    theta=np.sqrt(2*299792458*args[2]/((1+args[6])*args[3]*3.086e+16))    
+    
+    x=(2*np.pi/(6.626e-34*299792458))*(1+args[6])*theta*args[1]*1.6022e-16*args[0]*1e-6
+    
+    tau_a=np.power(args[1]*(1+args[6]),-args[4])*np.power(args[0]/0.1,4.-args[5])
+    temp=(np.sin(x)/x**2) - (np.cos(x)/x)
+    tau_theta=np.power(temp,2)
+    tau=tau_a*tau_theta
+    
+    S = args[7]*np.power(args[1],-args[8])
+    dF=S*tau/args[2]
+    return dF
+
+ctype_pyXspec_f_PL = LowLevelCallable(pyXspec_integrand_PL.ctypes)
+
+def dustXspecPL (engs,params,flux,flux_err,spec_num):
+    """
+    XSPEC dust model with power law source function  given parameters 
+    params = [a_m, a_M, R_pc, s, q, tau0, z, S0, 
+                         beta, tol = 1.49e-8, lim = 100]
+    where E_m and E_M are lower and upper cut offs of 
+    the band we are observing a_m and a_M are lower and upper cut offs of grain sizes in 
+    um, R_pc is the distance to dust layer in pc, s and q are as defined in 
+    Shao et. al 2008, z = redshift, source_fluence_E = source fluence at energy
+    E in ergs/keV. t_l and t_u is the lower and upper limit of 
+    the time interval of spectrum which should be
+    written as xflt field in FITS file.
+    Returns the answer in ergs/keV and error.
+    """
+    a_m, a_M, R_pc, s, q, tau0, z, S0, beta , nm= params
+    n = len(engs)
+    x1,x2=xp.AllData(spec_num).xflt
+    t_l=x1[1]
+    t_u=x2[1]
+    for i in range(n - 1):
+        flux[i] = 0.1*tau0*integrate.nquad(ctype_pyXspec_f_PL, 
+                                        ((a_m,a_M), (engs[i],engs[i+1]),(t_l,t_u)),
+                                        args = (R_pc, s, q, z, S0, beta))[0]
+    
