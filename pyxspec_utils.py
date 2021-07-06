@@ -66,7 +66,7 @@ def pyXspec_integrand_PL(n,args):
     args : array of parameters
         args = [a, E, t, R, s, q, z, S0, beta] where 
         S0 = Normalisation of power law source function (in ergs/keV).
-        beta = spectral index of power law source function
+        beta = Power of energy in power law source function
     
 
     Returns

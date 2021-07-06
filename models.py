@@ -220,7 +220,7 @@ def calc_dust_total_flux_PL(t_list, E_m, E_M, a_m, a_M, R_pc, s, q, tau0, z, S0,
     S0 : float
         Normalisation of power law source function (in ergs/keV).
     beta : float
-        spectral index of power law source function
+        Power of energy in power law source function
     tol : floar, optional
         epabs for scipy.integrate . The default is 1.49e-8.
     lim : integer, optional
