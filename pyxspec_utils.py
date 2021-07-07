@@ -72,7 +72,7 @@ def pyXspec_integrand_PL(n,args):
     Returns
     -------
     dF : float
-        Integrand to be integrated using low level callble in scipy integrate.
+        Integrand in to be integrated using low level callble in scipy integrate.
 
     """
 
@@ -87,7 +87,8 @@ def pyXspec_integrand_PL(n,args):
     tau=tau_a*tau_theta
     
     S = args[7]*np.power(args[1],-args[8])
-    dF=S*tau/args[2]
+    dF=S*tau/args[2] # in erg/(kev cm^2 s)
+    dF *= 6.242e8 # to photons/(kev cm^2 s)
     return dF
 
 ctype_pyXspec_f_PL = LowLevelCallable(pyXspec_integrand_PL.ctypes)
@@ -130,6 +131,7 @@ def dust_PL (engs,params,flux,flux_err,spec_num):
     x1,x2=xp.AllData(spec_num).xflt
     t_l=x1[1]
     t_u=x2[1]
+    print(t_l)
     for i in range(n - 1):
         flux[i] = 0.1*tau0*integrate.nquad(ctype_pyXspec_f_PL, 
                                         ((a_m,a_M), (engs[i],engs[i+1]),(t_l,t_u)),
@@ -146,8 +148,8 @@ def add_dustPL_to_Xspec():
 
     """
     #               par_name  units default hard_min soft_min soft_max hard_max fit_delta
-    Dust_ModelInfo=("LowerDust \"\" 0.025 0.0001 0.001 0.3 1 0.01",
-                "UpperDust \"\" 0.25 0.0001 0.01 0.8 2 0.01",
+    Dust_ModelInfo=("LowerDust \"\" 0.025 0.0001 0.0001 0.03 0.03 0.01",
+                "UpperDust \"\" 0.25 0.0001 0.01 0.8 1 0.01",
                 "DustDistance \"\" 10 0.5 1 500 5000 0.1",
                 "s \"\" 2 -5 0 6 10 0.1",
                 "q \"\" 4.5 0 2.5 6 8 0.1",
