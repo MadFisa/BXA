@@ -12,6 +12,7 @@ from tqdm import tqdm
 from astropy.io import fits
 from scipy import integrate,LowLevelCallable
 from numba import cfunc, types
+# from tqdm.auto import trange
 
 tol = 1.49e-8
 lim = 100
@@ -25,7 +26,7 @@ def add_xflt(spec_list):
     Parameters
     ----------
     spec_list : List
-        List of spectrum files i.e their paths
+        List of spectrum files i.e their paths.
 
     Returns
     -------
@@ -96,7 +97,7 @@ ctype_pyXspec_f_PL = LowLevelCallable(pyXspec_integrand_PL.ctypes)
 def dust_PL (engs,params,flux,flux_err,spec_num):
     
     """
-        XSPEC dust model with power law source function  given parameters 
+    XSPEC dust model with power law source function  given parameters 
     params = [a_m, a_M, R_pc, s, q, tau0, z, S0, 
                          beta, tol = 1.49e-8, lim = 100]
     where E_m and E_M are lower and upper cut offs of 
@@ -115,7 +116,8 @@ def dust_PL (engs,params,flux,flux_err,spec_num):
     params : list
         Parameters of the model. Passed from XSPEC
     flux : array
-        array of fluxes to be filled with flux values, flux[i] = flux between engs[i] and engs[i+1]
+        array of fluxes to be filled with flux values, flux[i] = flux between 
+        engs[i] and engs[i+1]
     flux_err : array
         Similar to flux, but to be filled with flux_err
     spec_num : integer
@@ -131,8 +133,9 @@ def dust_PL (engs,params,flux,flux_err,spec_num):
     x1,x2=xp.AllData(spec_num).xflt
     t_l=x1[1]
     t_u=x2[1]
-    print(t_l)
-    for i in range(n - 1):
+    print(f'{a_m =} ,{a_M =},{R_pc =}, {s =}, { q =}, { tau0 =}, {z =}, {S0 =}, {beta =}, {nm =}')
+    
+    for i in tqdm(range(n - 1)):
         flux[i] = 0.1*tau0*integrate.nquad(ctype_pyXspec_f_PL, 
                                         ((a_m,a_M), (engs[i],engs[i+1]),(t_l,t_u)),
                                         args = (R_pc, s, q, z, S0, beta))[0]
@@ -151,7 +154,7 @@ def add_dustPL_to_Xspec():
     Dust_ModelInfo=("LowerDust \"\" 0.025 0.0001 0.0001 0.03 0.03 0.01",
                 "UpperDust \"\" 0.25 0.0001 0.01 0.8 1 0.01",
                 "DustDistance \"\" 10 0.5 1 500 5000 0.1",
-                "s \"\" 2 -5 0 6 10 0.1",
+                "s \"\" 2 0 0 6 10 0.1",
                 "q \"\" 4.5 0 2.5 6 8 0.1",
                 "tau0 \"\" 1 1e-5 1e-3 1e3 1e5 1e1",
                 "z \"\" 0 0 0 10 100 0.1",
