@@ -48,3 +48,29 @@ def split_block(block,labels = ['time', 'value']):
         temp = block[:, 3*idx : 3*(idx+1)]
         data_dict[labels_i] = data_to_dict(temp)
     return data_dict
+
+
+def read_t_file(filename):
+    """
+    Reads time intervals from a file made for swift website spectrum creatios
+
+    Parameters
+    ----------
+    filename : string
+        path to file
+
+    Returns
+    -------
+    times : list
+        a list of floats.
+
+    """
+    with open(filename,'r') as reader:
+        lines = reader.readlines()
+        times = []
+        for line in lines:
+            tt = line.split(' ')[1]
+            time = tt.split('-')
+            times.append(float(time[0]))
+        times.append(float(time[-1].strip()))
+    return times
